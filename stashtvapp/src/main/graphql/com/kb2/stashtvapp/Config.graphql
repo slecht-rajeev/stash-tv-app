@@ -1,0 +1,19 @@
+query GetUIConfig {
+  configuration {
+    ui
+  }
+}
+
+query GetSavedFilter($id: ID!) {
+  findSavedFilter(id: $id) {
+    id
+    name
+    mode
+    find_filter {
+      q
+      sort
+      direction
+    }
+    object_filter
+  }
+}

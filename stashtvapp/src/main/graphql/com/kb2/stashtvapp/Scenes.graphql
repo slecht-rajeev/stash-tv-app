@@ -1,0 +1,94 @@
+query FindScenes($filter: FindFilterType, $scene_filter: SceneFilterType) {
+  findScenes(filter: $filter, scene_filter: $scene_filter) {
+    count
+    scenes {
+      id
+      title
+      details
+      date
+      resume_time
+      paths {
+        screenshot
+        preview
+        stream
+      }
+      studio {
+        id
+        name
+        image_path
+      }
+      tags {
+        id
+        name
+      }
+      performers {
+        id
+        name
+        image_path
+      }
+    }
+  }
+}
+
+query FindScene($id: ID!) {
+  findScene(id: $id) {
+    id
+    title
+    details
+    date
+    resume_time
+    paths {
+      screenshot
+      preview
+      stream
+    }
+    studio {
+      id
+      name
+      image_path
+    }
+    tags {
+      id
+      name
+    }
+    performers {
+      id
+      name
+      image_path
+    }
+  }
+}
+
+query FindTags($filter: FindFilterType, $tag_filter: TagFilterType) {
+  findTags(filter: $filter, tag_filter: $tag_filter) {
+    count
+    tags {
+      id
+      name
+      image_path
+      scene_count
+    }
+  }
+}
+
+query FindPerformers($filter: FindFilterType, $performer_filter: PerformerFilterType) {
+  findPerformers(filter: $filter, performer_filter: $performer_filter) {
+    count
+    performers {
+      id
+      name
+      image_path
+    }
+  }
+}
+
+mutation AddScenePlay($id: ID!) {
+  sceneAddPlay(id: $id) {
+    count
+  }
+}
+
+mutation SaveSceneActivity($id: ID!, $resume_time: Float) {
+  sceneSaveActivity(id: $id, resume_time: $resume_time)
+}
+

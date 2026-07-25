@@ -1,0 +1,63 @@
+query SearchScenes($filter: FindFilterType) {
+  findScenes(filter: $filter) {
+    count
+    scenes {
+      id
+      title
+      paths {
+        screenshot
+        preview
+        stream
+      }
+    }
+  }
+}
+
+query SearchPerformers($performer_filter: PerformerFilterType, $filter: FindFilterType) {
+  findPerformers(performer_filter: $performer_filter, filter: $filter) {
+    count
+    performers {
+      id
+      name
+      image_path
+    }
+  }
+}
+
+query SearchTags($tag_filter: TagFilterType, $filter: FindFilterType) {
+  findTags(tag_filter: $tag_filter, filter: $filter) {
+    count
+    tags {
+      id
+      name
+      image_path
+    }
+  }
+}
+
+query SearchGroups($group_filter: GroupFilterType, $filter: FindFilterType) {
+  findGroups(group_filter: $group_filter, filter: $filter) {
+    count
+    groups {
+      id
+      name
+      front_image_path
+    }
+  }
+}
+
+query SearchMarkers($filter: FindFilterType) {
+  findSceneMarkers(filter: $filter) {
+    count
+    scene_markers {
+      id
+      title
+      stream
+      preview
+      scene {
+        id
+        title
+      }
+    }
+  }
+}
