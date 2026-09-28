@@ -24,10 +24,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -98,8 +101,21 @@ fun VideoPlayerScreenContent(
     val exoPlayer = rememberPlayer(context)
 
     val videoPlayerState = rememberVideoPlayerState(
-        hideSeconds = 2,
+        hideSeconds = 10,
     )
+
+    var isPlaying by remember { mutableStateOf(exoPlayer.isPlaying) }
+    DisposableEffect(exoPlayer) {
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(playing: Boolean) {
+                isPlaying = playing
+            }
+        }
+        exoPlayer.addListener(listener)
+        onDispose {
+            exoPlayer.removeListener(listener)
+        }
+    }
 
      LaunchedEffect(exoPlayer, sceneDetails) {
         exoPlayer.setMediaItem(MediaItem.fromUri(sceneDetails.videoUri))
@@ -117,6 +133,13 @@ fun VideoPlayerScreenContent(
             if (exoPlayer.isPlaying) {
                 updateResumeTime(exoPlayer.currentPosition.toDouble() / 1000)
             }
+        }
+    }
+
+    LaunchedEffect(videoPlayerState.lastInteractionTime, isPlaying) {
+        if (isPlaying && videoPlayerState.isControlsVisible) {
+            delay(videoPlayerState.hideSeconds.toLong() * 1000)
+            videoPlayerState.hideControls()
         }
     }
 
@@ -141,7 +164,11 @@ fun VideoPlayerScreenContent(
     Box(
         Modifier
             .fillMaxSize()
-            .dPadEvents(exoPlayer, videoPlayerState)
+            .dPadEvents(exoPlayer, videoPlayerState, isPlaying)
+            .onKeyEvent {
+                videoPlayerState.showControls()
+                false
+            }
             .focusable()
     ) {
         PlayerSurface(
@@ -157,15 +184,15 @@ fun VideoPlayerScreenContent(
         VideoPlayerOverlay(
             modifier = Modifier.align(Alignment.BottomCenter),
             focusRequester = focusRequester,
-            isPlaying = exoPlayer.isPlaying,
+            isPlaying = isPlaying,
             isControlsVisible = videoPlayerState.isControlsVisible,
-            showControls = videoPlayerState::showControls,
+            showControls = { videoPlayerState.showControls() },
             controls = {
                 VideoPlayerControls(
                     player = exoPlayer,
                     sceneDetails = sceneDetails,
                     focusRequester = focusRequester,
-                    onShowControls = { videoPlayerState.showControls(exoPlayer.isPlaying) },
+                    onShowControls = { videoPlayerState.showControls() },
                 )
             }
         )
@@ -174,22 +201,23 @@ fun VideoPlayerScreenContent(
 
 private fun Modifier.dPadEvents(
     exoPlayer: ExoPlayer,
-    videoPlayerState: VideoPlayerState
+    videoPlayerState: VideoPlayerState,
+    isPlaying: Boolean
 ): Modifier = this.handleDPadRepeatKeyEvents(
     onLeft = {
         exoPlayer.seekBack()
-        videoPlayerState.showControls(exoPlayer.isPlaying)
+        videoPlayerState.showControls()
     },
     onRight = {
         exoPlayer.seekForward()
-        videoPlayerState.showControls(exoPlayer.isPlaying)
+        videoPlayerState.showControls()
     },
     onUp = { videoPlayerState.showControls() },
     onDown = { videoPlayerState.showControls() },
     onEnter = {
         if (!videoPlayerState.isControlsVisible) {
-            if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
-            videoPlayerState.showControls(exoPlayer.isPlaying)
+            if (isPlaying) exoPlayer.pause() else exoPlayer.play()
+            videoPlayerState.showControls()
         }
     }
 )

@@ -55,7 +55,10 @@ fun VideoPlayerControlsIcon(
 
     Surface(
         modifier = modifier.size(40.dp),
-        onClick = onClick,
+        onClick = {
+            onClick()
+            onShowControls()
+        },
         shape = ClickableSurfaceDefaults.shape(shape = CircleShape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
