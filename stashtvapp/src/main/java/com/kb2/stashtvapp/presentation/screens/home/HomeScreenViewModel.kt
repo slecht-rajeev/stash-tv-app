@@ -19,6 +19,7 @@ package com.kb2.stashtvapp.presentation.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kb2.stashtvapp.data.entities.HomeSection
+import com.kb2.stashtvapp.data.entities.Scene
 import com.kb2.stashtvapp.data.entities.SceneList
 import com.kb2.stashtvapp.data.repositories.SceneRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,9 +28,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @HiltViewModel
-class HomeScreeViewModel @Inject constructor(sceneRepository: SceneRepository) : ViewModel() {
+class HomeScreeViewModel @Inject constructor(private val sceneRepository: SceneRepository) : ViewModel() {
 
     val uiState: StateFlow<HomeScreenUiState> = combine(
         sceneRepository.getFeaturedScenes(),
@@ -44,6 +46,18 @@ class HomeScreeViewModel @Inject constructor(sceneRepository: SceneRepository) :
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = HomeScreenUiState.Loading
     )
+
+    fun addFavorite(scene: Scene) {
+        viewModelScope.launch {
+            sceneRepository.addFavorite(scene.id)
+        }
+    }
+
+    fun addWatchLater(scene: Scene) {
+        viewModelScope.launch {
+            sceneRepository.addWatchLaterTag(scene.id)
+        }
+    }
 }
 
 sealed interface HomeScreenUiState {

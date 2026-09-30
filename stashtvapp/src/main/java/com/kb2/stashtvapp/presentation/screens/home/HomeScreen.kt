@@ -65,6 +65,8 @@ fun HomeScreen(
                 onSceneClick = onSceneClick,
                 onScroll = onScroll,
                 goToVideoPlayer = goToVideoPlayer,
+                onToggleFavorite = { homeScreeViewModel.addFavorite(it) },
+                onAddWatchLater = { homeScreeViewModel.addWatchLater(it) },
                 isTopBarVisible = isTopBarVisible,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -82,6 +84,8 @@ private fun Catalog(
     onSceneClick: (scene: Scene) -> Unit,
     onScroll: (isTopBarVisible: Boolean) -> Unit,
     goToVideoPlayer: (scene: Scene) -> Unit,
+    onToggleFavorite: (scene: Scene) -> Unit = {},
+    onAddWatchLater: (scene: Scene) -> Unit = {},
     modifier: Modifier = Modifier,
     isTopBarVisible: Boolean = true,
 ) {
@@ -115,6 +119,8 @@ private fun Catalog(
                 scenes = featuredScenes,
                 padding = childPadding,
                 goToVideoPlayer = goToVideoPlayer,
+                onToggleFavorite = onToggleFavorite,
+                onAddWatchLater = onAddWatchLater,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(324.dp)
