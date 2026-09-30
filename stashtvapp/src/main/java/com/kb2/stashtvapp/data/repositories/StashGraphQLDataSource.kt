@@ -61,13 +61,19 @@ class StashGraphQLDataSource @Inject constructor(
         ).execute()
         
         return response.data?.findScenes?.scenes?.map {
+            val title = if (!it.title.isNullOrBlank()) {
+                it.title
+            } else {
+                it.files.firstOrNull()?.basename?.ifBlank { null } ?: "No Title"
+            }
             Scene(
                 id = it.id,
                 videoUri = it.paths.stream.toFullUrl(),
                 subtitleUri = null,
                 posterUri = it.paths.screenshot.toFullUrl(),
-                name = it.title ?: "No Title",
-                description = it.details ?: ""
+                name = title,
+                description = it.details ?: "",
+                studioName = it.studio?.name
             )
         } ?: emptyList()
     }
@@ -75,13 +81,19 @@ class StashGraphQLDataSource @Inject constructor(
     suspend fun getScene(id: String): Scene? {
         val response = apolloClient.query(FindSceneQuery(id)).execute()
         return response.data?.findScene?.let {
+            val title = if (!it.title.isNullOrBlank()) {
+                it.title
+            } else {
+                it.files.firstOrNull()?.basename?.ifBlank { null } ?: "No Title"
+            }
             Scene(
                 id = it.id,
                 videoUri = it.paths.stream.toFullUrl(),
                 subtitleUri = null,
                 posterUri = it.paths.screenshot.toFullUrl(),
-                name = it.title ?: "No Title",
-                description = it.details ?: ""
+                name = title,
+                description = it.details ?: "",
+                studioName = it.studio?.name
             )
         }
     }
@@ -123,6 +135,104 @@ class StashGraphQLDataSource @Inject constructor(
             } finally {
                 connection.disconnect()
             }
+        }
+    }
+
+    suspend fun addFavorite(sceneId: String) {
+        addTagToScene(sceneId, "Favorite")
+        withContext(Dispatchers.IO) {
+            val ratingPayload = """
+                {
+                  "query": "mutation SceneUpdate(${'$'}input: SceneUpdateInput!) { sceneUpdate(input: ${'$'}input) { id rating100 } }",
+                  "variables": {
+                    "input": {
+                      "id": "${sceneId.escapeJson()}",
+                      "rating100": 100
+                    }
+                  }
+                }
+            """.trimIndent()
+            executeRawGraphQL(ratingPayload, "set rating 100 for scene $sceneId")
+        }
+    }
+
+    suspend fun addWatchLaterTag(sceneId: String) {
+        addTagToScene(sceneId, "Watch Later")
+    }
+
+    private suspend fun addTagToScene(sceneId: String, tagName: String) {
+        withContext(Dispatchers.IO) {
+            val sceneDetails = getSceneDetails(sceneId)
+            val existingTagIds = sceneDetails?.tags?.map { it.id }?.toMutableList() ?: mutableListOf()
+
+            val allTags = getTags()
+            var tagId = allTags.find { it.name.equals(tagName, ignoreCase = true) }?.id
+
+            if (tagId == null) {
+                val createTagPayload = """
+                    {
+                      "query": "mutation TagCreate(${'$'}input: TagCreateInput!) { tagCreate(input: ${'$'}input) { id name } }",
+                      "variables": {
+                        "input": {
+                          "name": "${tagName.escapeJson()}"
+                        }
+                      }
+                    }
+                """.trimIndent()
+                executeRawGraphQL(createTagPayload, "create tag $tagName")
+                tagId = getTags().find { it.name.equals(tagName, ignoreCase = true) }?.id
+            }
+
+            if (tagId != null && !existingTagIds.contains(tagId)) {
+                existingTagIds.add(tagId)
+                val tagIdsJson = existingTagIds.joinToString(",") { "\"${it.escapeJson()}\"" }
+                val updateScenePayload = """
+                    {
+                      "query": "mutation SceneUpdate(${'$'}input: SceneUpdateInput!) { sceneUpdate(input: ${'$'}input) { id } }",
+                      "variables": {
+                        "input": {
+                          "id": "${sceneId.escapeJson()}",
+                          "tag_ids": [$tagIdsJson]
+                        }
+                      }
+                    }
+                """.trimIndent()
+                executeRawGraphQL(updateScenePayload, "add tag $tagName to scene $sceneId")
+            }
+        }
+    }
+
+    private fun executeRawGraphQL(payload: String, actionName: String): String? {
+        val connection = URL("$baseUrl/graphql").openConnection() as HttpURLConnection
+        return try {
+            connection.requestMethod = "POST"
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 10_000
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+
+            OutputStreamWriter(connection.outputStream, StandardCharsets.UTF_8).use { writer ->
+                writer.write(payload)
+            }
+
+            val responseCode = connection.responseCode
+            val body = if (responseCode >= HttpURLConnection.HTTP_BAD_REQUEST) {
+                connection.errorStream?.bufferedReader()?.use(BufferedReader::readText)
+            } else {
+                connection.inputStream?.bufferedReader()?.use(BufferedReader::readText)
+            }
+
+            if (responseCode >= HttpURLConnection.HTTP_BAD_REQUEST || body?.contains("\"errors\"") == true) {
+                println("GraphQL Errors while executing $actionName: HTTP $responseCode ${body.orEmpty()}")
+            } else {
+                println("GraphQL Success executing $actionName: HTTP $responseCode ${body.orEmpty()}")
+            }
+            body
+        } catch (e: Exception) {
+            println("Exception executing $actionName: ${e.message}")
+            null
+        } finally {
+            connection.disconnect()
         }
     }
 

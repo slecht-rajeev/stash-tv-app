@@ -39,6 +39,8 @@ interface SceneRepository {
     suspend fun getSceneDetails(sceneId: String): SceneDetails
     suspend fun recordScenePlay(sceneId: String)
     suspend fun saveSceneActivity(sceneId: String, resumeTime: Double)
+    suspend fun addFavorite(sceneId: String)
+    suspend fun addWatchLaterTag(sceneId: String)
     suspend fun searchScenes(query: String): SceneList
     suspend fun globalSearch(query: String, limit: Int = 5): SearchResult
     fun getScenesWithLongThumbnail(): Flow<SceneList>
