@@ -75,6 +75,8 @@ fun SceneDetailsScreen(
                 goToScenePlayer = goToScenePlayer,
                 onBackPressed = onBackPressed,
                 refreshScreenWithNewScene = refreshScreenWithNewScene,
+                onToggleFavorite = { sceneDetailsScreenViewModel.addFavorite(it) },
+                onAddWatchLater = { sceneDetailsScreenViewModel.addWatchLater(it) },
                 modifier = Modifier
                     .fillMaxSize()
                     .animateContentSize()
@@ -89,6 +91,8 @@ private fun Details(
     goToScenePlayer: () -> Unit,
     onBackPressed: () -> Unit,
     refreshScreenWithNewScene: (Scene) -> Unit,
+    onToggleFavorite: (sceneId: String) -> Unit = {},
+    onAddWatchLater: (sceneId: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val childPadding = rememberChildPadding()
@@ -101,7 +105,9 @@ private fun Details(
         item {
             SceneDetails(
                 sceneDetails = sceneDetails,
-                goToScenePlayer = goToScenePlayer
+                goToScenePlayer = goToScenePlayer,
+                onToggleFavorite = onToggleFavorite,
+                onAddWatchLater = onAddWatchLater
             )
         }
 

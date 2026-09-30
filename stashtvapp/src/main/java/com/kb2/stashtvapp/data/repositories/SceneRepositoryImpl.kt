@@ -56,7 +56,7 @@ class SceneRepositoryImpl @Inject constructor(
 
     override fun getFeaturedScenes() = flow {
         val featuredStudioIds = preferenceManager.getFeaturedStudioIds()
-        val filter = if (featuredStudioIds.isNotEmpty()) {
+        val sceneFilter = if (featuredStudioIds.isNotEmpty()) {
             SceneFilterType(
                 studios = Optional.present(
                     HierarchicalMultiCriterionInput(
@@ -65,10 +65,27 @@ class SceneRepositoryImpl @Inject constructor(
                     )
                 )
             )
-        } else null
+        } else {
+            SceneFilterType(
+                studios_filter = Optional.present(
+                    com.kb2.stashtvapp.type.StudioFilterType(
+                        favorite = Optional.present(true)
+                    )
+                )
+            )
+        }
 
-        val list = stashGraphQLDataSource.getScenes(sceneFilter = filter)
-        emit(list.shuffled().take(4))
+        val findFilter = FindFilterType(
+            per_page = Optional.present(100),
+            sort = Optional.present("random")
+        )
+
+        var list = stashGraphQLDataSource.getScenes(filter = findFilter, sceneFilter = sceneFilter)
+        if (list.isEmpty() && featuredStudioIds.isEmpty()) {
+            list = stashGraphQLDataSource.getScenes(filter = findFilter)
+        }
+
+        emit(list.shuffled().take(8))
     }
 
     override fun getHomeSections(): Flow<List<HomeSection>> = flow {
@@ -196,12 +213,18 @@ class SceneRepositoryImpl @Inject constructor(
         println("Scene Id: $sceneId")
         val scene = sceneData ?: throw Exception("Scene not found")
 
+        val title = if (!scene.title.isNullOrBlank()) {
+            scene.title
+        } else {
+            scene.files.firstOrNull()?.basename?.ifBlank { null } ?: "No Title"
+        }
+
         return SceneDetails(
             id = scene.id,
             videoUri = scene.paths.stream.toFullUrl(),
             subtitleUri = null,
             posterUri = scene.paths.screenshot.toFullUrl(),
-            name = scene.title ?: "No Title",
+            name = title,
             description = scene.details ?: "",
             pgRating = "NC-17",
             releaseDate = scene.date ?: "Unknown",
@@ -234,6 +257,14 @@ class SceneRepositoryImpl @Inject constructor(
 
     override suspend fun saveSceneActivity(sceneId: String, resumeTime: Double) {
         stashGraphQLDataSource.saveSceneActivity(sceneId, resumeTime)
+    }
+
+    override suspend fun addFavorite(sceneId: String) {
+        stashGraphQLDataSource.addFavorite(sceneId)
+    }
+
+    override suspend fun addWatchLaterTag(sceneId: String) {
+        stashGraphQLDataSource.addWatchLaterTag(sceneId)
     }
 
     override suspend fun searchScenes(query: String): SceneList {

@@ -12,6 +12,10 @@ query FindScenes($filter: FindFilterType, $scene_filter: SceneFilterType) {
         preview
         stream
       }
+      files {
+        basename
+        path
+      }
       studio {
         id
         name
@@ -41,6 +45,10 @@ query FindScene($id: ID!) {
       screenshot
       preview
       stream
+    }
+    files {
+      basename
+      path
     }
     studio {
       id

@@ -26,11 +26,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class SceneDetailsScreenViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    repository: SceneRepository,
+    private val repository: SceneRepository,
 ) : ViewModel() {
     val uiState = savedStateHandle
         .getStateFlow<String?>(SceneDetailsScreen.SceneIdBundleKey, null)
@@ -46,6 +47,18 @@ class SceneDetailsScreenViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = SceneDetailsScreenUiState.Loading
         )
+
+    fun addFavorite(sceneId: String) {
+        viewModelScope.launch {
+            repository.addFavorite(sceneId)
+        }
+    }
+
+    fun addWatchLater(sceneId: String) {
+        viewModelScope.launch {
+            repository.addWatchLaterTag(sceneId)
+        }
+    }
 }
 
 sealed class SceneDetailsScreenUiState {
