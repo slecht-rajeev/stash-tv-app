@@ -16,7 +16,7 @@
 
 package com.kb2.stashtvapp.presentation.screens.home
 
-import androidx.compose.foundation.layout.Box
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,20 +28,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Card
-import androidx.tv.material3.Text
 import com.kb2.stashtvapp.data.entities.Scene
 import com.kb2.stashtvapp.data.entities.SceneList
 import com.kb2.stashtvapp.data.entities.HomeSection
-import com.kb2.stashtvapp.data.util.StringConstants
 import com.kb2.stashtvapp.presentation.common.Error
 import com.kb2.stashtvapp.presentation.common.Loading
 import com.kb2.stashtvapp.presentation.common.ScenesRow
@@ -86,7 +80,7 @@ private fun Catalog(
     goToVideoPlayer: (scene: Scene) -> Unit,
     onToggleFavorite: (scene: Scene) -> Unit = {},
     onAddWatchLater: (scene: Scene) -> Unit = {},
-    modifier: Modifier = Modifier,
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
     isTopBarVisible: Boolean = true,
 ) {
 

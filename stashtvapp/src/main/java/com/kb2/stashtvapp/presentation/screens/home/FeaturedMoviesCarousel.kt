@@ -16,7 +16,7 @@
 
 package com.kb2.stashtvapp.presentation.screens.home
 
-import android.view.KeyEvent
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -54,16 +54,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -72,7 +69,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
-import androidx.tv.material3.Card
 import androidx.tv.material3.Carousel
 import androidx.tv.material3.CarouselDefaults
 import androidx.tv.material3.CarouselState
@@ -90,7 +86,6 @@ import com.kb2.stashtvapp.data.util.StringConstants
 import com.kb2.stashtvapp.presentation.theme.StashAppBorderWidth
 import com.kb2.stashtvapp.presentation.theme.StashAppButtonShape
 import com.kb2.stashtvapp.presentation.utils.Padding
-import com.kb2.stashtvapp.presentation.utils.handleDPadKeyEvents
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 val CarouselSaver = Saver<CarouselState, Int>(
@@ -106,7 +101,7 @@ fun FeaturedScenesCarousel(
     goToVideoPlayer: (scene: Scene) -> Unit,
     onToggleFavorite: ((scene: Scene) -> Unit)? = null,
     onAddWatchLater: ((scene: Scene) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
 ) {
     val carouselState = rememberSaveable(saver = CarouselSaver) { CarouselState(0) }
     var isCarouselFocused by remember { mutableStateOf(false) }
@@ -311,7 +306,7 @@ private fun ActionButtonsRow(
     goToVideoPlayer: (scene: Scene) -> Unit,
     onToggleFavorite: ((scene: Scene) -> Unit)? = null,
     onAddWatchLater: ((scene: Scene) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
 ) {
     var isFavorite by remember(scene.id) { mutableStateOf(false) }
     var isWatchLater by remember(scene.id) { mutableStateOf(false) }
