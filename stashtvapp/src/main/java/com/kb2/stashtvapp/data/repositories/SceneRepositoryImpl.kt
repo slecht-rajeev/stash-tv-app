@@ -29,7 +29,6 @@ import com.kb2.stashtvapp.type.SortDirectionEnum
 import com.kb2.stashtvapp.data.entities.SearchResult
 import com.kb2.stashtvapp.data.entities.Studio
 import com.kb2.stashtvapp.data.entities.StudioDetails
-import com.kb2.stashtvapp.data.local.PreferenceManager
 import com.kb2.stashtvapp.data.util.StringConstants
 import com.kb2.stashtvapp.type.CriterionModifier
 import com.kb2.stashtvapp.type.HierarchicalMultiCriterionInput
@@ -42,7 +41,6 @@ import kotlinx.coroutines.flow.flow
 @Singleton
 class SceneRepositoryImpl @Inject constructor(
     private val stashGraphQLDataSource: StashGraphQLDataSource,
-    private val preferenceManager: PreferenceManager,
     private val tvDataSource: TvDataSource
 ) : SceneRepository {
 
@@ -55,37 +53,22 @@ class SceneRepositoryImpl @Inject constructor(
     }
 
     override fun getFeaturedScenes() = flow {
-        val featuredStudioIds = preferenceManager.getFeaturedStudioIds()
-        val sceneFilter = if (featuredStudioIds.isNotEmpty()) {
-            SceneFilterType(
-                studios = Optional.present(
-                    HierarchicalMultiCriterionInput(
-                        value = Optional.present(featuredStudioIds),
-                        modifier = CriterionModifier.INCLUDES
-                    )
+        val targetStudioIds = listOf("2", "5", "6", "10", "11", "15", "22", "24", "32", "33", "55")
+        val sceneFilter = SceneFilterType(
+            studios = Optional.present(
+                HierarchicalMultiCriterionInput(
+                    value = Optional.present(targetStudioIds),
+                    modifier = CriterionModifier.INCLUDES
                 )
             )
-        } else {
-            SceneFilterType(
-                studios_filter = Optional.present(
-                    com.kb2.stashtvapp.type.StudioFilterType(
-                        favorite = Optional.present(true)
-                    )
-                )
-            )
-        }
-
+        )
         val findFilter = FindFilterType(
-            per_page = Optional.present(100),
+            per_page = Optional.present(8),
             sort = Optional.present("random")
         )
 
-        var list = stashGraphQLDataSource.getScenes(filter = findFilter, sceneFilter = sceneFilter)
-        if (list.isEmpty() && featuredStudioIds.isEmpty()) {
-            list = stashGraphQLDataSource.getScenes(filter = findFilter)
-        }
-
-        emit(list.shuffled().take(8))
+        val list = stashGraphQLDataSource.getScenes(filter = findFilter, sceneFilter = sceneFilter)
+        emit(list)
     }
 
     override fun getHomeSections(): Flow<List<HomeSection>> = flow {
