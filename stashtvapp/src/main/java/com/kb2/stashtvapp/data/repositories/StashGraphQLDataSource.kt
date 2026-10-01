@@ -69,6 +69,7 @@ class StashGraphQLDataSource @Inject constructor(
             Scene(
                 id = it.id,
                 videoUri = it.paths.stream.toFullUrl(),
+                previewUri = it.paths.preview.toFullUrl(),
                 subtitleUri = null,
                 posterUri = it.paths.screenshot.toFullUrl(),
                 name = title,
@@ -89,6 +90,7 @@ class StashGraphQLDataSource @Inject constructor(
             Scene(
                 id = it.id,
                 videoUri = it.paths.stream.toFullUrl(),
+                previewUri = it.paths.preview.toFullUrl(),
                 subtitleUri = null,
                 posterUri = it.paths.screenshot.toFullUrl(),
                 name = title,

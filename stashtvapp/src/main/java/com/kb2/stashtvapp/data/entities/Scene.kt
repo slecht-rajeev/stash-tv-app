@@ -21,6 +21,7 @@ import com.kb2.stashtvapp.data.models.ScenesResponseItem
 data class Scene(
     val id: String,
     val videoUri: String,
+    val previewUri: String? = null,
     val subtitleUri: String?,
     val posterUri: String,
     val name: String,
@@ -34,12 +35,13 @@ fun ScenesResponseItem.toScene(thumbnailType: ThumbnailType = ThumbnailType.Stan
         ThumbnailType.Long -> image_16_9
     }
     return Scene(
-        id,
-        videoUri,
-        subtitleUri,
-        thumbnail,
-        title,
-        fullTitle
+        id = id,
+        videoUri = videoUri,
+        previewUri = null,
+        subtitleUri = subtitleUri,
+        posterUri = thumbnail,
+        name = title,
+        description = fullTitle
     )
 }
 

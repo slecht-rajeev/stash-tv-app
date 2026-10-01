@@ -18,6 +18,7 @@ package com.kb2.stashtvapp.presentation.screens.home
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -109,19 +110,30 @@ private fun Catalog(
     ) {
 
         item(contentType = "FeaturedScenesCarousel") {
-            FeaturedScenesCarousel(
-                scenes = featuredScenes,
-                padding = childPadding,
-                goToVideoPlayer = goToVideoPlayer,
-                onToggleFavorite = onToggleFavorite,
-                onAddWatchLater = onAddWatchLater,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(324.dp)
-                /*
-                 Setting height for the FeaturedSceneCarousel to keep it rendered with same height,
-                 regardless of the top bar's visibility
-                 */
+//            FeaturedScenesCarousel(
+//                scenes = featuredScenes,
+//                padding = childPadding,
+//                goToVideoPlayer = goToVideoPlayer,
+//                onToggleFavorite = onToggleFavorite,
+//                onAddWatchLater = onAddWatchLater,
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(324.dp)
+//                /*
+//                 Setting height for the FeaturedSceneCarousel to keep it rendered with same height,
+//                 regardless of the top bar's visibility
+//                 */
+//            )
+            StackedHeroCarousel(
+                items = featuredScenes,
+                modifier = Modifier.padding(
+                    start = 48.dp,
+                    top = 24.dp,
+                    end = 24.dp
+                ),
+                onSceneClick = { scene ->
+                    goToVideoPlayer(scene)
+                }
             )
         }
 
