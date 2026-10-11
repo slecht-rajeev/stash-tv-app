@@ -160,8 +160,15 @@ fun DashboardScreen(
 
         LaunchedEffect(Unit) {
             if (!wasTopBarFocusRequestedBefore) {
-                TopBarFocusRequesters[currentTopBarSelectedTabIndex + 1].requestFocus()
-                wasTopBarFocusRequestedBefore = true
+                try {
+                    val index = currentTopBarSelectedTabIndex + 1
+                    if (index in TopBarFocusRequesters.indices) {
+                        TopBarFocusRequesters[index].requestFocus()
+                    }
+                    wasTopBarFocusRequestedBefore = true
+                } catch (e: Exception) {
+                    println("DashboardScreen: FocusRequester not initialized yet: ${e.message}")
+                }
             }
         }
 
@@ -247,6 +254,7 @@ private fun Body(
                 onSceneClick = { selectedScene ->
                     openSceneDetailsScreen(selectedScene.id)
                 },
+                onCategoryClick = openCategorySceneList,
                 goToVideoPlayer = openVideoPlayer,
                 onScroll = updateTopBarVisibility,
                 isTopBarVisible = isTopBarVisible

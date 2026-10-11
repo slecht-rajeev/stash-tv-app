@@ -154,7 +154,7 @@ fun ImmersiveListScenesRow(
     title: String? = null,
     titleStyle: TextStyle = MaterialTheme.typography.headlineLarge.copy(
         fontWeight = FontWeight.Medium,
-        fontSize = 30.sp
+        fontSize = 20.sp
     ),
     showItemTitle: Boolean = true,
     showIndexOverImage: Boolean = true,
@@ -168,7 +168,7 @@ fun ImmersiveListScenesRow(
     ) {
         if (title != null) {
             Text(
-                text = title,
+                text = title.uppercase(),
                 style = titleStyle,
                 modifier = Modifier
                     .alpha(1f)
@@ -211,7 +211,8 @@ fun ImmersiveListScenesRow(
                         onSceneFocused = onSceneFocused,
                         scene = scene,
                         showItemTitle = showItemTitle,
-                        showIndexOverImage = showIndexOverImage
+                        showIndexOverImage = showIndexOverImage,
+                        showOnlyPoster = true
                     )
                 }
             }
@@ -230,28 +231,38 @@ private fun ScenesRowItem(
     modifier: Modifier = Modifier,
     itemDirection: ItemDirection = ItemDirection.Vertical,
     onSceneFocused: (Scene) -> Unit = {},
+    showOnlyPoster: Boolean = false
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
-    SceneCardSimple(
-        onClick = { onSceneSelected(scene) },
-        scene = scene,
-        modifier = Modifier
-            .onFocusChanged {
-                isFocused = it.isFocused
-                if (it.isFocused) {
-                    onSceneFocused(scene)
-                }
+    val focusModifier = Modifier
+        .onFocusChanged {
+            isFocused = it.isFocused
+            if (it.isFocused) {
+                onSceneFocused(scene)
             }
-            .focusProperties {
-                left = if (index == 0) {
-                    FocusRequester.Cancel
-                } else {
-                    FocusRequester.Default
-                }
+        }
+        .focusProperties {
+            left = if (index == 0) {
+                FocusRequester.Cancel
+            } else {
+                FocusRequester.Default
             }
-            .then(modifier)
-    )
+        }
+
+    if (showOnlyPoster) {
+        PosterCard(
+            scene = scene,
+            onClick = { onSceneSelected(scene) },
+            modifier = focusModifier.then(modifier)
+        )
+    } else {
+        SceneCardSimple(
+            onClick = { onSceneSelected(scene) },
+            scene = scene,
+            modifier = focusModifier.then(modifier)
+        )
+    }
 }
 
 @Composable

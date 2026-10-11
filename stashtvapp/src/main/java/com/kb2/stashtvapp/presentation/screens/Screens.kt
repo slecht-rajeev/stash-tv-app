@@ -42,7 +42,7 @@ enum class Screens(
     StudioDetails(listOf(StudioDetailsScreen.StudioIdBundleKey)),
     SceneDetails(listOf(SceneDetailsScreen.SceneIdBundleKey)),
     Dashboard,
-    VideoPlayer(listOf(VideoPlayerScreen.SceneIdBundleKey));
+    VideoPlayer(listOf(VideoPlayerScreen.SceneIdBundleKey, VideoPlayerScreen.StartPositionBundleKey));
 
     operator fun invoke(): String {
         val argList = StringBuilder()

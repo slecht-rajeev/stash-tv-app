@@ -45,6 +45,7 @@ import com.kb2.stashtvapp.presentation.screens.dashboard.rememberChildPadding
 @Composable
 fun HomeScreen(
     onSceneClick: (scene: Scene) -> Unit,
+    onCategoryClick: (categoryId: String) -> Unit = {},
     goToVideoPlayer: (scene: Scene) -> Unit,
     onScroll: (isTopBarVisible: Boolean) -> Unit,
     isTopBarVisible: Boolean,
@@ -56,8 +57,11 @@ fun HomeScreen(
         is HomeScreenUiState.Ready -> {
             Catalog(
                 featuredScenes = s.featuredSceneList,
+                watchLaterScenes = s.watchLaterScenes,
                 homeSections = s.homeSections,
+                positionsSubTags = s.positionsSubTags,
                 onSceneClick = onSceneClick,
+                onCategoryClick = onCategoryClick,
                 onScroll = onScroll,
                 goToVideoPlayer = goToVideoPlayer,
                 onToggleFavorite = { homeScreeViewModel.addFavorite(it) },
@@ -75,8 +79,11 @@ fun HomeScreen(
 @Composable
 private fun Catalog(
     featuredScenes: SceneList,
+    watchLaterScenes: SceneList,
     homeSections: List<HomeSection>,
+    positionsSubTags: List<com.kb2.stashtvapp.data.entities.SceneCategory> = emptyList(),
     onSceneClick: (scene: Scene) -> Unit,
+    onCategoryClick: (categoryId: String) -> Unit = {},
     onScroll: (isTopBarVisible: Boolean) -> Unit,
     goToVideoPlayer: (scene: Scene) -> Unit,
     onToggleFavorite: (scene: Scene) -> Unit = {},
@@ -110,20 +117,6 @@ private fun Catalog(
     ) {
 
         item(contentType = "FeaturedScenesCarousel") {
-//            FeaturedScenesCarousel(
-//                scenes = featuredScenes,
-//                padding = childPadding,
-//                goToVideoPlayer = goToVideoPlayer,
-//                onToggleFavorite = onToggleFavorite,
-//                onAddWatchLater = onAddWatchLater,
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(324.dp)
-//                /*
-//                 Setting height for the FeaturedSceneCarousel to keep it rendered with same height,
-//                 regardless of the top bar's visibility
-//                 */
-//            )
             StackedHeroCarousel(
                 items = featuredScenes,
                 modifier = Modifier.padding(
@@ -137,13 +130,39 @@ private fun Catalog(
             )
         }
 
+        if (positionsSubTags.isNotEmpty()) {
+            item(contentType = "PositionsSection") {
+                PositionsSection(
+                    subTags = positionsSubTags,
+                    onSubTagClick = onCategoryClick,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+            }
+        }
+
+//        if (watchLaterScenes.isNotEmpty()) {
+//            item(contentType = "WatchLaterImmersiveList") {
+//                WatchLaterImmersiveList(
+//                    sceneList = watchLaterScenes,
+//                    onSceneClick = onSceneClick,
+//                    modifier = Modifier.padding(top = 16.dp)
+//                )
+//            }
+//        }
+
         homeSections.forEach { section ->
             item(contentType = "ScenesRow") {
-                ScenesRow(
-                    modifier = Modifier.padding(top = 16.dp),
+//                ScenesRow(
+//                    modifier = Modifier.padding(top = 16.dp),
+//                    sceneList = section.scenes,
+//                    title = section.title,
+//                    onSceneSelected = onSceneClick
+//                )
+                WatchLaterImmersiveList(
                     sceneList = section.scenes,
+                    onSceneClick = onSceneClick,
                     title = section.title,
-                    onSceneSelected = onSceneClick
+                    modifier = Modifier.padding(top = 16.dp)
                 )
             }
         }

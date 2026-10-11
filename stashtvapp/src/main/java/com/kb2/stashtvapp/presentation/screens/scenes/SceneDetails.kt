@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +69,8 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.IconButtonDefaults
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
+import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -78,34 +81,52 @@ import com.kb2.stashtvapp.presentation.screens.dashboard.rememberChildPadding
 import com.kb2.stashtvapp.presentation.theme.StashAppButtonShape
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SceneDetails(
     sceneDetails: SceneDetails,
-    goToScenePlayer: () -> Unit,
+    goToScenePlayer: (startPositionMs: Long) -> Unit,
+    availablePositionSubTags: List<com.kb2.stashtvapp.data.entities.SceneCategory> = emptyList(),
+    onAddPositionTag: (tagId: String) -> Unit = {},
+    onRemovePositionTag: (tagId: String) -> Unit = {},
     onToggleFavorite: (sceneId: String) -> Unit = {},
     onAddWatchLater: (sceneId: String) -> Unit = {}
 ) {
     val childPadding = rememberChildPadding()
-    val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val coroutineScope = rememberCoroutineScope()
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(432.dp)
-            .bringIntoViewRequester(bringIntoViewRequester)
+        modifier = Modifier.fillMaxWidth()
     ) {
         SceneImageWithGradients(
             sceneDetails = sceneDetails,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(480.dp)
         )
 
-        Column(modifier = Modifier.fillMaxWidth(0.55f)) {
-            Spacer(modifier = Modifier.height(108.dp))
+        Column(modifier = Modifier.fillMaxWidth(0.6f)) {
+            Spacer(modifier = Modifier.height(72.dp))
             Column(
                 modifier = Modifier.padding(start = childPadding.start)
             ) {
+                val studio = sceneDetails.director.ifBlank { null }
+                if (studio != null && studio != "Unknown") {
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        colors = SurfaceDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                        ),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = studio.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
                 SceneLargeTitle(sceneTitle = sceneDetails.name)
 
                 Column(
@@ -113,7 +134,7 @@ fun SceneDetails(
                 ) {
                     SceneDescription(description = sceneDetails.description)
                     DotSeparatedRow(
-                        modifier = Modifier.padding(top = 20.dp),
+                        modifier = Modifier.padding(top = 16.dp),
                         texts = listOf(
                             sceneDetails.pgRating,
                             sceneDetails.releaseDate,
@@ -131,15 +152,33 @@ fun SceneDetails(
                     sceneDetails = sceneDetails,
                     goToScenePlayer = goToScenePlayer,
                     onToggleFavorite = onToggleFavorite,
-                    onAddWatchLater = onAddWatchLater,
-                    modifier = Modifier.onFocusChanged {
-                        if (it.isFocused) {
-                            coroutineScope.launch { bringIntoViewRequester.bringIntoView() }
-                        }
-                    }
+                    onAddWatchLater = onAddWatchLater
                 )
+
+                if (availablePositionSubTags.isNotEmpty()) {
+                    PositionsTagSelector(
+                        assignedTags = sceneDetails.tags,
+                        availablePositionSubTags = availablePositionSubTags,
+                        onAddPosition = onAddPositionTag,
+                        onRemovePosition = onRemovePositionTag,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
         }
+    }
+}
+
+private fun formatResumeTime(seconds: Double): String {
+    val totalSeconds = seconds.toLong()
+    val mins = totalSeconds / 60
+    val secs = totalSeconds % 60
+    return if (mins >= 60) {
+        val hours = mins / 60
+        val remMins = mins % 60
+        String.format("%d:%02d:%02d", hours, remMins, secs)
+    } else {
+        String.format("%d:%02d", mins, secs)
     }
 }
 
@@ -147,7 +186,7 @@ fun SceneDetails(
 @Composable
 private fun ActionButtonsRow(
     sceneDetails: SceneDetails,
-    goToScenePlayer: () -> Unit,
+    goToScenePlayer: (startPositionMs: Long) -> Unit,
     onToggleFavorite: (sceneId: String) -> Unit = {},
     onAddWatchLater: (sceneId: String) -> Unit = {},
     modifier: Modifier = Modifier
@@ -155,6 +194,10 @@ private fun ActionButtonsRow(
     var isFavorite by remember(sceneDetails.id) { mutableStateOf(false) }
     var isWatchLater by remember(sceneDetails.id) { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+
+    val resumeTimeSec = sceneDetails.resumeTime
+    val hasResumeProgress = resumeTimeSec > 5.0
+    val resumePositionMs = (resumeTimeSec * 1000).toLong()
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -178,22 +221,71 @@ private fun ActionButtonsRow(
                 false
             }
     ) {
-        Button(
-            onClick = goToScenePlayer,
-            modifier = Modifier.height(38.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-            shape = ButtonDefaults.shape(shape = StashAppButtonShape)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.PlayArrow,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = stringResource(R.string.watch_now),
-                style = MaterialTheme.typography.titleSmall
-            )
+        if (hasResumeProgress) {
+            val formattedTime = formatResumeTime(resumeTimeSec)
+
+            // 1. Resume Button
+            Button(
+                onClick = { goToScenePlayer(resumePositionMs) },
+                modifier = Modifier.height(38.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                shape = ButtonDefaults.shape(shape = StashAppButtonShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = "Resume from $formattedTime",
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+
+            // 2. Start Over Button
+            Button(
+                onClick = { goToScenePlayer(0L) },
+                modifier = Modifier.height(38.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                shape = ButtonDefaults.shape(shape = StashAppButtonShape),
+                colors = ButtonDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    focusedContainerColor = MaterialTheme.colorScheme.onSurface,
+                    focusedContentColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Refresh,
+                    contentDescription = "Start Over",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    text = "Start Over",
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+        } else {
+            // Standard Watch Now Button
+            Button(
+                onClick = { goToScenePlayer(0L) },
+                modifier = Modifier.height(38.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                shape = ButtonDefaults.shape(shape = StashAppButtonShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = stringResource(R.string.watch_now),
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
         }
 
         IconButton(
@@ -302,33 +394,35 @@ private fun SceneImageWithGradients(
     gradientColor: Color = MaterialTheme.colorScheme.surface,
 ) {
     AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current).data(sceneDetails.posterUri)
-            .crossfade(true).build(),
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(sceneDetails.posterUri)
+            .crossfade(true)
+            .build(),
         contentDescription = StringConstants
             .Composable
             .ContentDescription
             .scenePoster(sceneDetails.name),
-        contentScale = ContentScale.Fit,
+        contentScale = ContentScale.Crop,
         modifier = modifier.drawWithContent {
             drawContent()
             drawRect(
                 Brush.verticalGradient(
                     colors = listOf(Color.Transparent, gradientColor),
-                    startY = 600f
+                    startY = size.height * 0.35f
                 )
             )
             drawRect(
                 Brush.horizontalGradient(
                     colors = listOf(gradientColor, Color.Transparent),
-                    endX = 1000f,
-                    startX = 300f
+                    endX = size.width * 0.85f,
+                    startX = size.width * 0.15f
                 )
             )
             drawRect(
                 Brush.linearGradient(
                     colors = listOf(gradientColor, Color.Transparent),
-                    start = Offset(x = 500f, y = 500f),
-                    end = Offset(x = 1000f, y = 0f)
+                    start = Offset(x = size.width * 0.35f, y = size.height * 0.35f),
+                    end = Offset(x = size.width * 0.85f, y = 0f)
                 )
             )
         }

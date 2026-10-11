@@ -26,10 +26,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +48,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -54,8 +58,10 @@ import com.kb2.stashtvapp.data.entities.SceneList
 import com.kb2.stashtvapp.presentation.common.ImmersiveListScenesRow
 import com.kb2.stashtvapp.presentation.common.ItemDirection
 import com.kb2.stashtvapp.presentation.common.PosterImage
+import com.kb2.stashtvapp.presentation.common.VideoPreviewPlayer
 import com.kb2.stashtvapp.presentation.screens.dashboard.rememberChildPadding
 import com.kb2.stashtvapp.presentation.utils.bringIntoViewIfChildrenAreFocused
+import kotlinx.coroutines.delay
 
 @Composable
 fun Top10ScenesList(
@@ -64,8 +70,19 @@ fun Top10ScenesList(
     gradientColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
     onSceneClick: (scene: Scene) -> Unit
 ) {
+    if (sceneList.isEmpty()) return
+
     var isListFocused by remember { mutableStateOf(false) }
     var selectedScene by remember(sceneList) { mutableStateOf(sceneList.first()) }
+    var isPlayingPreview by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedScene.id, isListFocused) {
+        isPlayingPreview = false
+        if (isListFocused) {
+            delay(3_000L)
+            isPlayingPreview = true
+        }
+    }
 
     val sectionTitle = if (isListFocused) {
         null
@@ -76,6 +93,7 @@ fun Top10ScenesList(
     ImmersiveList(
         selectedScene = selectedScene,
         isListFocused = isListFocused,
+        isPlayingPreview = isPlayingPreview,
         gradientColor = gradientColor,
         sceneList = sceneList,
         sectionTitle = sectionTitle,
@@ -96,6 +114,7 @@ fun Top10ScenesList(
 private fun ImmersiveList(
     selectedScene: Scene,
     isListFocused: Boolean,
+    isPlayingPreview: Boolean,
     gradientColor: Color,
     sceneList: SceneList,
     sectionTitle: String?,
@@ -111,6 +130,7 @@ private fun ImmersiveList(
         Background(
             scene = selectedScene,
             visible = isListFocused,
+            isPlayingPreview = isPlayingPreview,
             modifier = modifier
                 .height(432.dp)
                 .gradientOverlay(gradientColor)
@@ -144,6 +164,7 @@ private fun ImmersiveList(
 private fun Background(
     scene: Scene,
     visible: Boolean,
+    isPlayingPreview: Boolean,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -153,11 +174,29 @@ private fun Background(
         modifier = modifier
     ) {
         Crossfade(
-            targetState = scene,
+            targetState = scene to isPlayingPreview,
             label = "posterUriCrossfade",
-
-        ) {
-            PosterImage(scene = it, modifier = Modifier.fillMaxSize())
+        ) { (targetScene, previewActive) ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (previewActive) {
+                    VideoPreviewPlayer(
+                        videoUri = targetScene.previewUri?.ifBlank { null } ?: targetScene.videoUri,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(0.75f)
+                            .align(Alignment.CenterEnd)
+                    )
+                } else {
+                    PosterImage(
+                        scene = targetScene,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(0.75f)
+                            .align(Alignment.CenterEnd)
+                    )
+                }
+            }
         }
     }
 }
@@ -171,14 +210,32 @@ private fun SceneDescription(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(text = scene.name, style = MaterialTheme.typography.displaySmall)
+        val studioText = scene.studioName?.ifBlank { null }
+        if (studioText != null) {
+            Text(
+                text = studioText.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = FontWeight.Bold
+            )
+        }
         Text(
-            modifier = Modifier.fillMaxWidth(0.5f),
-            text = scene.description,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
-            fontWeight = FontWeight.Light
+            text = scene.name,
+            style = MaterialTheme.typography.headlineSmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
+        if (scene.description.isNotBlank()) {
+            Text(
+                modifier = Modifier.fillMaxWidth(0.5f),
+                text = scene.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                fontWeight = FontWeight.Light,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

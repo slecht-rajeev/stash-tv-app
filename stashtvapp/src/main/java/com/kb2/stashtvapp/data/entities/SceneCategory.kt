@@ -21,6 +21,8 @@ import com.kb2.stashtvapp.data.models.SceneCategoriesResponseItem
 data class SceneCategory(
     val id: String,
     val name: String,
+    val imageUri: String? = null,
+    val subTags: List<SceneCategory> = emptyList()
 )
 
 fun SceneCategoriesResponseItem.toSceneCategory(): SceneCategory =
