@@ -58,6 +58,7 @@ import kotlinx.coroutines.delay
 
 object VideoPlayerScreen {
     const val SceneIdBundleKey = "sceneId"
+    const val StartPositionBundleKey = "startPosition"
 }
 
 @Composable
@@ -83,6 +84,7 @@ fun VideoPlayerScreen(
 
             VideoPlayerScreenContent(
                 sceneDetails = s.sceneDetails,
+                startPositionMs = s.startPositionMs,
                 onBackPressed = onBackPressed,
                 updateResumeTime = { videoPlayerScreenViewModel.updateResumeTime(s.sceneDetails.id, it) }
             )
@@ -94,6 +96,7 @@ fun VideoPlayerScreen(
 @Composable
 fun VideoPlayerScreenContent(
     sceneDetails: SceneDetails,
+    startPositionMs: Long? = null,
     onBackPressed: () -> Unit,
     updateResumeTime: (Double) -> Unit
 ) {
@@ -101,7 +104,7 @@ fun VideoPlayerScreenContent(
     val exoPlayer = rememberPlayer(context)
 
     val videoPlayerState = rememberVideoPlayerState(
-        hideSeconds = 10,
+        hideSeconds = 3,
     )
 
     var isPlaying by remember { mutableStateOf(exoPlayer.isPlaying) }
@@ -117,10 +120,14 @@ fun VideoPlayerScreenContent(
         }
     }
 
-     LaunchedEffect(exoPlayer, sceneDetails) {
+    LaunchedEffect(exoPlayer, sceneDetails, startPositionMs) {
         exoPlayer.setMediaItem(MediaItem.fromUri(sceneDetails.videoUri))
-        if (sceneDetails.resumeTime > 0) {
-            exoPlayer.seekTo(sceneDetails.resumeTime.toLong() * 1000)
+        val targetPosition = startPositionMs ?: (sceneDetails.resumeTime * 1000).toLong()
+        if (targetPosition > 0) {
+            exoPlayer.seekTo(targetPosition)
+        } else {
+            exoPlayer.seekTo(0)
+            updateResumeTime(0.0)
         }
         exoPlayer.prepare()
         exoPlayer.play()
@@ -136,7 +143,7 @@ fun VideoPlayerScreenContent(
         }
     }
 
-    LaunchedEffect(videoPlayerState.lastInteractionTime, isPlaying) {
+    LaunchedEffect(videoPlayerState.lastInteractionTime, isPlaying, videoPlayerState.isControlsVisible) {
         if (isPlaying && videoPlayerState.isControlsVisible) {
             delay(videoPlayerState.hideSeconds.toLong() * 1000)
             videoPlayerState.hideControls()
@@ -174,10 +181,12 @@ fun VideoPlayerScreenContent(
         PlayerSurface(
             player = exoPlayer,
             surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
-            modifier = Modifier.resizeWithContentScale(
-                contentScale = ContentScale.Fit,
-                sourceSizeDp = null
-            )
+            modifier = Modifier
+                .fillMaxSize()
+                .resizeWithContentScale(
+                    contentScale = ContentScale.Fit,
+                    sourceSizeDp = null
+                )
         )
 
         val focusRequester = remember { FocusRequester() }

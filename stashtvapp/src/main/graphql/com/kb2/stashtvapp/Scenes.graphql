@@ -75,6 +75,16 @@ query FindTags($filter: FindFilterType, $tag_filter: TagFilterType) {
       name
       image_path
       scene_count
+      parents {
+        id
+        name
+      }
+      children {
+        id
+        name
+        image_path
+        scene_count
+      }
     }
   }
 }

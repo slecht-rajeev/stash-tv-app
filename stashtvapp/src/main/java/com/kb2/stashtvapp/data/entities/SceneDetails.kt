@@ -26,6 +26,7 @@ data class SceneDetails(
     val pgRating: String,
     val releaseDate: String,
     val categories: List<String>,
+    val tags: List<SceneCategory> = emptyList(),
     val duration: String,
     val director: String,
     val screenplay: String,

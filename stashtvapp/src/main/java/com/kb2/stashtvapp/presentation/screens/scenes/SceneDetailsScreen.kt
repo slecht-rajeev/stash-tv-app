@@ -53,12 +53,13 @@ object SceneDetailsScreen {
 
 @Composable
 fun SceneDetailsScreen(
-    goToScenePlayer: () -> Unit,
+    goToScenePlayer: (startPositionMs: Long) -> Unit,
     onBackPressed: () -> Unit,
     refreshScreenWithNewScene: (Scene) -> Unit,
     sceneDetailsScreenViewModel: SceneDetailsScreenViewModel = hiltViewModel()
 ) {
     val uiState by sceneDetailsScreenViewModel.uiState.collectAsStateWithLifecycle()
+    val positionSubTags by sceneDetailsScreenViewModel.positionSubTags.collectAsStateWithLifecycle()
 
     when (val s = uiState) {
         is SceneDetailsScreenUiState.Loading -> {
@@ -72,11 +73,14 @@ fun SceneDetailsScreen(
         is SceneDetailsScreenUiState.Done -> {
             Details(
                 sceneDetails = s.sceneDetails,
+                availablePositionSubTags = positionSubTags,
                 goToScenePlayer = goToScenePlayer,
                 onBackPressed = onBackPressed,
                 refreshScreenWithNewScene = refreshScreenWithNewScene,
                 onToggleFavorite = { sceneDetailsScreenViewModel.addFavorite(it) },
                 onAddWatchLater = { sceneDetailsScreenViewModel.addWatchLater(it) },
+                onAddPositionTag = { sceneDetailsScreenViewModel.addPositionTag(it) },
+                onRemovePositionTag = { sceneDetailsScreenViewModel.removePositionTag(it) },
                 modifier = Modifier
                     .fillMaxSize()
                     .animateContentSize()
@@ -88,11 +92,14 @@ fun SceneDetailsScreen(
 @Composable
 private fun Details(
     sceneDetails: SceneDetails,
-    goToScenePlayer: () -> Unit,
+    availablePositionSubTags: List<com.kb2.stashtvapp.data.entities.SceneCategory> = emptyList(),
+    goToScenePlayer: (startPositionMs: Long) -> Unit,
     onBackPressed: () -> Unit,
     refreshScreenWithNewScene: (Scene) -> Unit,
     onToggleFavorite: (sceneId: String) -> Unit = {},
     onAddWatchLater: (sceneId: String) -> Unit = {},
+    onAddPositionTag: (tagId: String) -> Unit = {},
+    onRemovePositionTag: (tagId: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val childPadding = rememberChildPadding()
@@ -105,7 +112,10 @@ private fun Details(
         item {
             SceneDetails(
                 sceneDetails = sceneDetails,
+                availablePositionSubTags = availablePositionSubTags,
                 goToScenePlayer = goToScenePlayer,
+                onAddPositionTag = onAddPositionTag,
+                onRemovePositionTag = onRemovePositionTag,
                 onToggleFavorite = onToggleFavorite,
                 onAddWatchLater = onAddWatchLater
             )

@@ -26,7 +26,8 @@ data class Scene(
     val posterUri: String,
     val name: String,
     val description: String,
-    val studioName: String? = null
+    val studioName: String? = null,
+    val resumeTime: Double = 0.0
 )
 
 fun ScenesResponseItem.toScene(thumbnailType: ThumbnailType = ThumbnailType.Standard): Scene {

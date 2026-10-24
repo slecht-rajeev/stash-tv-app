@@ -35,11 +35,15 @@ class HomeScreeViewModel @Inject constructor(private val sceneRepository: SceneR
 
     val uiState: StateFlow<HomeScreenUiState> = combine(
         sceneRepository.getFeaturedScenes(),
-        sceneRepository.getHomeSections()
-    ) { featuredSceneList, homeSections ->
+        sceneRepository.getHomeSections(),
+        sceneRepository.getWatchLaterScenes(),
+        sceneRepository.getPositionsSubTags()
+    ) { featuredSceneList, homeSections, watchLaterScenes, positionsSubTags ->
         HomeScreenUiState.Ready(
-            featuredSceneList,
-            homeSections
+            featuredSceneList = featuredSceneList,
+            homeSections = homeSections,
+            watchLaterScenes = watchLaterScenes,
+            positionsSubTags = positionsSubTags
         )
     }.stateIn(
         scope = viewModelScope,
@@ -65,6 +69,8 @@ sealed interface HomeScreenUiState {
     data object Error : HomeScreenUiState
     data class Ready(
         val featuredSceneList: SceneList,
-        val homeSections: List<HomeSection>
+        val homeSections: List<HomeSection>,
+        val watchLaterScenes: SceneList,
+        val positionsSubTags: List<com.kb2.stashtvapp.data.entities.SceneCategory> = emptyList()
     ) : HomeScreenUiState
 }

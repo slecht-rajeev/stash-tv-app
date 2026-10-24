@@ -97,9 +97,9 @@ fun App(
             ) { backStackEntry ->
                 val sceneId = backStackEntry.arguments?.getString(SceneDetailsScreen.SceneIdBundleKey)
                 SceneDetailsScreen(
-                    goToScenePlayer = {
+                    goToScenePlayer = { startPositionMs ->
                         if (sceneId != null) {
-                            navController.navigate(Screens.VideoPlayer.withArgs(sceneId))
+                            navController.navigate(Screens.VideoPlayer.withArgs(sceneId, startPositionMs))
                         }
                     },
                     refreshScreenWithNewScene = { scene ->
@@ -136,7 +136,7 @@ fun App(
                         )
                     },
                     openVideoPlayer = { scene ->
-                        navController.navigate(Screens.VideoPlayer.withArgs(scene.id))
+                        navController.navigate(Screens.VideoPlayer.withArgs(scene.id, (scene.resumeTime * 1000).toLong()))
                     },
                     onBackPressed = onBackPressed,
                     isComingBackFromDifferentScreen = isComingBackFromDifferentScreen,

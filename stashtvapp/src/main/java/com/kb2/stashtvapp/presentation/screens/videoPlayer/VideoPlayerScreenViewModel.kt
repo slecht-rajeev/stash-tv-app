@@ -37,6 +37,8 @@ class VideoPlayerScreenViewModel @Inject constructor(
 ) : ViewModel() {
     private val recordedScenePlays = ConcurrentHashMap.newKeySet<String>()
 
+    private val startPositionMs = savedStateHandle.get<String>(VideoPlayerScreen.StartPositionBundleKey)?.toLongOrNull()
+
     val uiState = savedStateHandle
         .getStateFlow<String?>(VideoPlayerScreen.SceneIdBundleKey, null)
         .map { id ->
@@ -44,7 +46,7 @@ class VideoPlayerScreenViewModel @Inject constructor(
                 VideoPlayerScreenUiState.Error
             } else {
                 val details = repository.getSceneDetails(sceneId = id)
-                VideoPlayerScreenUiState.Done(sceneDetails = details)
+                VideoPlayerScreenUiState.Done(sceneDetails = details, startPositionMs = startPositionMs)
             }
         }.stateIn(
             scope = viewModelScope,
@@ -80,5 +82,8 @@ class VideoPlayerScreenViewModel @Inject constructor(
 sealed class VideoPlayerScreenUiState {
     data object Loading : VideoPlayerScreenUiState()
     data object Error : VideoPlayerScreenUiState()
-    data class Done(val sceneDetails: SceneDetails) : VideoPlayerScreenUiState()
+    data class Done(
+        val sceneDetails: SceneDetails,
+        val startPositionMs: Long? = null
+    ) : VideoPlayerScreenUiState()
 }

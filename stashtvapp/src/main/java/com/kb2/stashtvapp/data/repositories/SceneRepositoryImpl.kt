@@ -19,6 +19,7 @@ package com.kb2.stashtvapp.data.repositories
 import android.util.Log
 import com.apollographql.apollo3.api.Optional
 import com.kb2.stashtvapp.data.entities.SceneCast
+import com.kb2.stashtvapp.data.entities.SceneCategory
 import com.kb2.stashtvapp.data.entities.SceneCategoryDetails
 import com.kb2.stashtvapp.data.entities.SceneDetails
 import com.kb2.stashtvapp.data.entities.SceneList
@@ -89,17 +90,21 @@ class SceneRepositoryImpl @Inject constructor(
             if (type == "saved_filter" || type == "SavedFilter") {
                 val id = map?.get("saved_filter_id")?.toString() ?: map?.get("savedFilterId")?.toString()
                 if (id != null) {
+                    println("StashHome: Processing saved_filter section with id: $id")
                     val sf = stashGraphQLDataSource.getSavedFilter(id)
                     if (sf != null && sf.mode.name == "SCENES") {
-                        val scenes = stashGraphQLDataSource.getScenes(
-                            filter = FindFilterType(
-                                q = Optional.presentIfNotNull(sf.find_filter?.q),
-                                sort = Optional.presentIfNotNull(sf.find_filter?.sort),
-                                direction = Optional.presentIfNotNull(sf.find_filter?.direction?.let { 
-                                    try { SortDirectionEnum.valueOf(it.name) } catch(e: Exception) { null }
-                                }),
-                                per_page = Optional.present(20)
-                            )
+                        println("StashHome: Processing saved_filter section with id: ${sf.id}, name${sf.name}")
+                        val findFilter = FindFilterType(
+                            q = Optional.presentIfNotNull(sf.find_filter?.q),
+                            sort = Optional.presentIfNotNull(sf.find_filter?.sort),
+                            direction = Optional.presentIfNotNull(sf.find_filter?.direction?.let {
+                                try { SortDirectionEnum.valueOf(it.name) } catch(e: Exception) { null }
+                            }),
+                            per_page = Optional.present(200)
+                        )
+                        val scenes = stashGraphQLDataSource.getScenesForSavedFilter(
+                            filter = findFilter,
+                            objectFilter = sf.object_filter
                         )
                         if (scenes.isNotEmpty()) {
                             sections.add(HomeSection(title = sf.name, scenes = scenes))
@@ -113,7 +118,7 @@ class SceneRepositoryImpl @Inject constructor(
             } else if (type == "scenes" || type == "RecentScenes") {
                 val title = map?.get("title")?.toString() ?: map?.get("name")?.toString() ?: "Recent Scenes"
                 val scenes = stashGraphQLDataSource.getScenes(
-                    filter = FindFilterType(per_page = Optional.present(20))
+                    filter = FindFilterType(per_page = Optional.present(200))
                 )
                 if (scenes.isNotEmpty()) {
                     sections.add(HomeSection(title = title, scenes = scenes))
@@ -123,7 +128,7 @@ class SceneRepositoryImpl @Inject constructor(
         
         if (sections.isEmpty()) {
             println("StashHome: No sections found in config, using fallback Trending row.")
-            sections.add(HomeSection("Trending", stashGraphQLDataSource.getScenes().take(20)))
+            sections.add(HomeSection("Trending", stashGraphQLDataSource.getScenes(filter = FindFilterType(per_page = Optional.present(200)))))
         }
         
         emit(sections)
@@ -152,7 +157,7 @@ class SceneRepositoryImpl @Inject constructor(
     override suspend fun getSceneCategoryDetails(categoryId: String): SceneCategoryDetails {
         val tags = stashGraphQLDataSource.getTags()
         val tag = tags.find { it.id == categoryId } ?: tags.first()
-        val filter = SceneFilterType(
+        val sceneFilter = SceneFilterType(
             tags = Optional.present(
                 HierarchicalMultiCriterionInput(
                     value = Optional.present(listOf(categoryId)),
@@ -160,7 +165,8 @@ class SceneRepositoryImpl @Inject constructor(
                 )
             )
         )
-        val scenes = stashGraphQLDataSource.getScenes(sceneFilter = filter)
+        val findFilter = FindFilterType(per_page = Optional.present(200))
+        val scenes = stashGraphQLDataSource.getScenes(filter = findFilter, sceneFilter = sceneFilter)
 
         return SceneCategoryDetails(
             id = tag.id,
@@ -172,7 +178,7 @@ class SceneRepositoryImpl @Inject constructor(
     override suspend fun getStudioDetails(studioId: String): StudioDetails {
         val studios = stashGraphQLDataSource.getStudios()
         val studioPair = studios.find { it.first == studioId } ?: studios.first()
-        val filter = SceneFilterType(
+        val sceneFilter = SceneFilterType(
             studios = Optional.present(
                 HierarchicalMultiCriterionInput(
                     value = Optional.present(listOf(studioId)),
@@ -180,7 +186,8 @@ class SceneRepositoryImpl @Inject constructor(
                 )
             )
         )
-        val scenes = stashGraphQLDataSource.getScenes(sceneFilter = filter)
+        val findFilter = FindFilterType(per_page = Optional.present(200))
+        val scenes = stashGraphQLDataSource.getScenes(filter = findFilter, sceneFilter = sceneFilter)
 
         return StudioDetails(
             id = studioPair.first,
@@ -212,6 +219,7 @@ class SceneRepositoryImpl @Inject constructor(
             pgRating = "NC-17",
             releaseDate = scene.date ?: "Unknown",
             categories = scene.tags.map { it.name },
+            tags = scene.tags.map { SceneCategory(id = it.id, name = it.name) },
             duration = "N/A",
             director = scene.studio?.name ?: "Unknown",
             screenplay = "N/A",
@@ -250,6 +258,10 @@ class SceneRepositoryImpl @Inject constructor(
         stashGraphQLDataSource.addWatchLaterTag(sceneId)
     }
 
+    override suspend fun updateSceneTags(sceneId: String, tagIds: List<String>): Boolean {
+        return stashGraphQLDataSource.updateSceneTags(sceneId, tagIds)
+    }
+
     override suspend fun searchScenes(query: String): SceneList {
         return stashGraphQLDataSource.getScenes().filter {
             it.name.contains(other = query, ignoreCase = true)
@@ -278,7 +290,7 @@ class SceneRepositoryImpl @Inject constructor(
     }
 
     override fun getFavouriteScenes(): Flow<SceneList> = flow {
-        emit(stashGraphQLDataSource.getScenes())
+        emit(stashGraphQLDataSource.getFavouriteScenes())
     }
 
     override fun getFavouriteScenesPaginated(page: Int, perPage: Int): Flow<SceneList> = flow {
@@ -290,13 +302,17 @@ class SceneRepositoryImpl @Inject constructor(
         emit(stashGraphQLDataSource.getScenes(filter = filter))
     }
 
+    override fun getWatchLaterScenes(): Flow<SceneList> = flow {
+        emit(stashGraphQLDataSource.getWatchLaterScenes())
+    }
+
     override fun getWatchLaterScenesPaginated(page: Int, perPage: Int): Flow<SceneList> = flow {
-        val filter = FindFilterType(
-            page = Optional.present(page),
-            per_page = Optional.present(perPage)
-        )
-        // TODO: Apply actual watch later filter (e.g. specific tag)
-        emit(stashGraphQLDataSource.getScenes(filter = filter))
+        val list = stashGraphQLDataSource.getWatchLaterScenes()
+        emit(list)
+    }
+
+    override fun getPositionsSubTags(): Flow<List<com.kb2.stashtvapp.data.entities.SceneCategory>> = flow {
+        emit(stashGraphQLDataSource.getPositionsSubTags())
     }
 
     override fun getPopularFilmsThisWeek(): Flow<SceneList> = flow {

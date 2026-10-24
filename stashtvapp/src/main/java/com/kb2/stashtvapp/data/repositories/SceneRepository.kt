@@ -41,6 +41,7 @@ interface SceneRepository {
     suspend fun saveSceneActivity(sceneId: String, resumeTime: Double)
     suspend fun addFavorite(sceneId: String)
     suspend fun addWatchLaterTag(sceneId: String)
+    suspend fun updateSceneTags(sceneId: String, tagIds: List<String>): Boolean
     suspend fun searchScenes(query: String): SceneList
     suspend fun globalSearch(query: String, limit: Int = 5): SearchResult
     fun getScenesWithLongThumbnail(): Flow<SceneList>
@@ -48,7 +49,9 @@ interface SceneRepository {
     fun getScenesPaginated(page: Int, perPage: Int, randomized: Boolean = false): Flow<SceneList>
     fun getFavouriteScenes(): Flow<SceneList>
     fun getFavouriteScenesPaginated(page: Int, perPage: Int): Flow<SceneList>
+    fun getWatchLaterScenes(): Flow<SceneList>
     fun getWatchLaterScenesPaginated(page: Int, perPage: Int): Flow<SceneList>
+    fun getPositionsSubTags(): Flow<List<com.kb2.stashtvapp.data.entities.SceneCategory>>
     fun getPopularFilmsThisWeek(): Flow<SceneList>
     fun getBingeWatchDramas(): Flow<SceneList>
     fun getTVShows(): Flow<SceneList>

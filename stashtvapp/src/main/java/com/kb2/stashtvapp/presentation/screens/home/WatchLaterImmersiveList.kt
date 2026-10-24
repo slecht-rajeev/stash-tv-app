@@ -1,0 +1,264 @@
+package com.kb2.stashtvapp.presentation.screens.home
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.focus.FocusState
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
+import com.kb2.stashtvapp.data.entities.Scene
+import com.kb2.stashtvapp.data.entities.SceneList
+import com.kb2.stashtvapp.presentation.common.ImmersiveListScenesRow
+import com.kb2.stashtvapp.presentation.common.ItemDirection
+import com.kb2.stashtvapp.presentation.common.PosterImage
+import com.kb2.stashtvapp.presentation.common.VideoPreviewPlayer
+import com.kb2.stashtvapp.presentation.screens.dashboard.rememberChildPadding
+import com.kb2.stashtvapp.presentation.utils.bringIntoViewIfChildrenAreFocused
+import kotlinx.coroutines.delay
+
+@Composable
+fun WatchLaterImmersiveList(
+    sceneList: SceneList,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    gradientColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+    onSceneClick: (scene: Scene) -> Unit
+) {
+    if (sceneList.isEmpty()) return
+
+    var isListFocused by remember { mutableStateOf(false) }
+    var selectedScene by remember(sceneList) { mutableStateOf(sceneList.first()) }
+    var isPlayingPreview by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedScene.id, isListFocused) {
+        isPlayingPreview = false
+        if (isListFocused) {
+            delay(3_000L)
+            isPlayingPreview = true
+        }
+    }
+
+    val sectionTitle = if (isListFocused) {
+        null
+    } else {
+        title
+    }
+
+    ImmersiveListContainer(
+        selectedScene = selectedScene,
+        isListFocused = isListFocused,
+        isPlayingPreview = isPlayingPreview,
+        gradientColor = gradientColor,
+        sceneList = sceneList,
+        sectionTitle = sectionTitle,
+        onSceneClick = onSceneClick,
+        onSceneFocused = {
+            selectedScene = it
+        },
+        onFocusChanged = {
+            isListFocused = it.hasFocus
+        },
+        modifier = modifier.bringIntoViewIfChildrenAreFocused(
+            PaddingValues(bottom = 116.dp)
+        )
+    )
+}
+
+@Composable
+private fun ImmersiveListContainer(
+    selectedScene: Scene,
+    isListFocused: Boolean,
+    isPlayingPreview: Boolean,
+    gradientColor: Color,
+    sceneList: SceneList,
+    sectionTitle: String?,
+    onFocusChanged: (FocusState) -> Unit,
+    onSceneFocused: (Scene) -> Unit,
+    onSceneClick: (Scene) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        contentAlignment = Alignment.BottomStart,
+        modifier = modifier
+    ) {
+        Background(
+            scene = selectedScene,
+            visible = isListFocused,
+            isPlayingPreview = isPlayingPreview,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(432.dp)
+                .gradientOverlay(gradientColor)
+        )
+        Column {
+            if (isListFocused) {
+                SceneDescription(
+                    scene = selectedScene,
+                    modifier = Modifier.padding(
+                        start = rememberChildPadding().start,
+                        bottom = 40.dp
+                    )
+                )
+            }
+
+            ImmersiveListScenesRow(
+                sceneList = sceneList,
+                itemDirection = ItemDirection.Horizontal,
+                title = sectionTitle,
+                showItemTitle = !isListFocused,
+                showIndexOverImage = false,
+                onSceneSelected = onSceneClick,
+                onSceneFocused = onSceneFocused,
+                modifier = Modifier.onFocusChanged(onFocusChanged)
+            )
+        }
+    }
+}
+
+@Composable
+private fun Background(
+    scene: Scene,
+    visible: Boolean,
+    isPlayingPreview: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+        modifier = modifier
+    ) {
+        Crossfade(
+            targetState = scene to isPlayingPreview,
+            label = "watchLaterPosterCrossfade",
+        ) { (targetScene, previewActive) ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (previewActive) {
+                    VideoPreviewPlayer(
+                        videoUri = targetScene.previewUri?.ifBlank { null } ?: targetScene.videoUri,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(0.75f)
+                            .align(Alignment.CenterEnd)
+                    )
+                } else {
+                    PosterImage(
+                        scene = targetScene,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(0.75f)
+                            .align(Alignment.CenterEnd)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SceneDescription(
+    scene: Scene,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        val studioText = scene.studioName?.ifBlank { null }
+        if (studioText != null) {
+            Text(
+                text = studioText.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Text(
+            text = scene.name,
+            style = MaterialTheme.typography.headlineSmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (scene.description.isNotBlank()) {
+            Text(
+                modifier = Modifier.fillMaxWidth(0.5f),
+                text = scene.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                fontWeight = FontWeight.Light,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+private fun Modifier.gradientOverlay(gradientColor: Color): Modifier =
+    drawWithCache {
+        val horizontalGradient = Brush.horizontalGradient(
+            colors = listOf(
+                gradientColor,
+                Color.Transparent
+            ),
+            startX = size.width.times(0.2f),
+            endX = size.width.times(0.7f)
+        )
+        val verticalGradient = Brush.verticalGradient(
+            colors = listOf(
+                Color.Transparent,
+                gradientColor
+            ),
+            endY = size.width.times(0.3f)
+        )
+        val linearGradient = Brush.linearGradient(
+            colors = listOf(
+                gradientColor,
+                Color.Transparent
+            ),
+            start = Offset(
+                size.width.times(0.2f),
+                size.height.times(0.5f)
+            ),
+            end = Offset(
+                size.width.times(0.9f),
+                0f
+            )
+        )
+
+        onDrawWithContent {
+            drawContent()
+            drawRect(horizontalGradient)
+            drawRect(verticalGradient)
+            drawRect(linearGradient)
+        }
+    }
