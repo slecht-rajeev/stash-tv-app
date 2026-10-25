@@ -2,6 +2,7 @@ package com.kb2.stashtvapp.presentation.screens.studios
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,16 +11,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +39,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
+import androidx.tv.material3.Icon
+import androidx.tv.material3.IconButton
+import androidx.tv.material3.IconButtonDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
@@ -92,90 +103,175 @@ private fun StudioDetails(
 
     BackHandler(onBack = onBackPressed)
 
-    Column(
-        modifier = modifier.fillMaxSize()
-    ) {
-        // Hero Header Section
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = childPadding.start,
-                    end = childPadding.end,
-                    top = childPadding.top.times(1.5f),
-                    bottom = 12.dp
-                )
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+    Box(modifier = modifier.fillMaxSize()) {
+        // Ambient Header Backdrop Image from First Scene if available
+        val backdropUri = studioDetails.scenes.firstOrNull()?.posterUri
+        if (!backdropUri.isNullOrBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
             ) {
-                Text(
-                    text = studioDetails.name,
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 32.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(backdropUri)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
-
-                // Scene Count Badge
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    colors = SurfaceDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
-                    ),
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Text(
-                        text = "${studioDetails.scenes.size} Scenes",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
+                // Dark horizontal and vertical gradients
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.5f),
+                                    Color(0xFF0F1016).copy(alpha = 0.95f),
+                                    Color(0xFF0F1016)
+                                )
+                            )
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF0F1016),
+                                    Color.Transparent,
+                                    Color(0xFF0F1016)
+                                )
+                            )
+                        )
+                )
             }
         }
 
-        // Scene Grid
-        if (studioDetails.scenes.isEmpty()) {
-            Box(
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Hero Header Section
+            Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 48.dp),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                Text(
-                    text = "No scenes found for this studio.",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
-                contentPadding = PaddingValues(
-                    start = childPadding.start,
-                    end = childPadding.end,
-                    top = 8.dp,
-                    bottom = StashAppBottomListPadding
-                ),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                itemsIndexed(
-                    studioDetails.scenes,
-                    key = { _, scene -> scene.id }
-                ) { index, scene ->
-                    GridSceneCard(
-                        scene = scene,
-                        onClick = { onSceneSelected(scene) },
-                        modifier = if (index == 0)
-                            Modifier.focusOnInitialVisibility(isFirstItemVisible)
-                        else Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = childPadding.start,
+                        end = childPadding.end,
+                        top = childPadding.top,
+                        bottom = 12.dp
                     )
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    IconButton(
+                        onClick = onBackPressed,
+                        colors = IconButtonDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                        ),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = studioDetails.name,
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 34.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            // Scene Count Pill Badge
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = SurfaceDefaults.colors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                                ),
+                                modifier = Modifier.padding(top = 2.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Movie,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = "${studioDetails.scenes.size} Scenes",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = "Browse scenes produced by ${studioDetails.name}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                        )
+                    }
+                }
+            }
+
+            // Scene Grid Section
+            if (studioDetails.scenes.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 64.dp),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Text(
+                        text = "No scenes found for this studio.",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    contentPadding = PaddingValues(
+                        start = childPadding.start,
+                        end = childPadding.end,
+                        top = 12.dp,
+                        bottom = StashAppBottomListPadding
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    itemsIndexed(
+                        studioDetails.scenes,
+                        key = { _, scene -> scene.id }
+                    ) { index, scene ->
+                        GridSceneCard(
+                            scene = scene,
+                            onClick = { onSceneSelected(scene) },
+                            modifier = if (index == 0)
+                                Modifier.focusOnInitialVisibility(isFirstItemVisible)
+                            else Modifier
+                        )
+                    }
                 }
             }
         }
@@ -202,7 +298,7 @@ private fun GridSceneCard(
                 focusedBorder = Border(
                     border = BorderStroke(
                         width = StashAppBorderWidth,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.primary
                     ),
                     shape = StashAppCardShape
                 )
@@ -220,10 +316,23 @@ private fun GridSceneCard(
                     modifier = Modifier.fillMaxSize()
                 )
 
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.7f)
+                                )
+                            )
+                        )
+                )
+
                 val studio = scene.studioName?.ifBlank { null }
                 if (studio != null) {
                     Surface(
-                        shape = MaterialTheme.shapes.extraSmall,
+                        shape = RoundedCornerShape(4.dp),
                         colors = SurfaceDefaults.colors(
                             containerColor = Color.Black.copy(alpha = 0.75f)
                         ),
