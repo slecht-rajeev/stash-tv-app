@@ -1,10 +1,15 @@
 package com.kb2.stashtvapp.presentation.screens.studios
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -16,25 +21,36 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.tv.material3.Border
+import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
+import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.kb2.stashtvapp.data.entities.Studio
 import com.kb2.stashtvapp.presentation.common.Loading
-import com.kb2.stashtvapp.presentation.common.SceneCard
 import com.kb2.stashtvapp.presentation.screens.dashboard.rememberChildPadding
-import com.kb2.stashtvapp.presentation.utils.GradientBg
+import com.kb2.stashtvapp.presentation.theme.StashAppBorderWidth
+import com.kb2.stashtvapp.presentation.theme.StashAppBottomListPadding
+import com.kb2.stashtvapp.presentation.theme.StashAppCardShape
+import com.kb2.stashtvapp.presentation.utils.focusOnInitialVisibility
 
 @Composable
 fun StudiosScreen(
@@ -43,7 +59,6 @@ fun StudiosScreen(
     onScroll: (isTopBarVisible: Boolean) -> Unit,
     studiosScreenViewModel: StudiosScreenViewModel = hiltViewModel()
 ) {
-
     val uiState by studiosScreenViewModel.uiState.collectAsStateWithLifecycle()
 
     when (val s = uiState) {
@@ -63,7 +78,6 @@ fun StudiosScreen(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun Catalog(
     studios: List<Studio>,
@@ -74,6 +88,8 @@ private fun Catalog(
 ) {
     val childPadding = rememberChildPadding()
     val lazyGridState = rememberLazyGridState()
+    val isFirstItemVisible = remember { mutableStateOf(false) }
+
     val shouldShowTopBar by remember {
         derivedStateOf {
             lazyGridState.firstVisibleItemIndex == 0 &&
@@ -84,55 +100,176 @@ private fun Catalog(
         onScroll(shouldShowTopBar)
     }
 
-    AnimatedContent(
-        targetState = studios,
-        modifier = Modifier
-            .padding(horizontal = childPadding.start)
-            .padding(top = childPadding.top),
-        label = "",
-    ) { it ->
+    Column(modifier = modifier) {
+        // Hero Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = childPadding.start,
+                    end = childPadding.end,
+                    top = childPadding.top,
+                    bottom = 16.dp
+                )
+        ) {
+            Text(
+                text = "Studios",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                colors = SurfaceDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                ),
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Text(
+                    text = "${studios.size} Studios",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
+        }
+
+        // Studio Grid
         LazyVerticalGrid(
             state = lazyGridState,
-            modifier = modifier,
             columns = GridCells.Fixed(gridColumns),
+            contentPadding = PaddingValues(
+                start = childPadding.start,
+                end = childPadding.end,
+                bottom = StashAppBottomListPadding
+            ),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier.fillMaxSize()
         ) {
-            itemsIndexed(it) { index, studio ->
-                var isFocused by remember { mutableStateOf(false) }
-                SceneCard(
-                    onClick = {
-                        onStudioClick(studio.id)
-                    },
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .aspectRatio(16 / 9f)
-                        .onFocusChanged {
-                            isFocused = it.isFocused || it.hasFocus
-                        }
-                        .focusProperties {
-                            if (index % gridColumns == 0) {
-                                left = FocusRequester.Cancel
-                            }
-                        }
-                ) {
-                    val itemAlpha by animateFloatAsState(
-                        targetValue = if (isFocused) .6f else 0.2f,
-                        label = ""
-                    )
-                    val textColor = if (isFocused) Color.White else Color.White
+            itemsIndexed(
+                studios,
+                key = { _, studio -> studio.id }
+            ) { index, studio ->
+                StudioTile(
+                    studio = studio,
+                    onClick = { onStudioClick(studio.id) },
+                    modifier = if (index == 0)
+                        Modifier.focusOnInitialVisibility(isFirstItemVisible)
+                    else Modifier
+                )
+            }
+        }
+    }
+}
 
-                    Box(contentAlignment = Alignment.Center) {
-                        Box(modifier = Modifier.alpha(itemAlpha)) {
-                            GradientBg()
+@Composable
+private fun StudioTile(
+    studio: Studio,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f),
+        shape = ClickableSurfaceDefaults.shape(StashAppCardShape),
+        border = ClickableSurfaceDefaults.border(
+            focusedBorder = Border(
+                border = BorderStroke(
+                    width = StashAppBorderWidth,
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                shape = StashAppCardShape
+            )
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (!studio.imageUri.isNullOrBlank()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(studio.imageUri)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = studio.name,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .drawWithContent {
+                            drawContent()
+                            drawRect(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.85f)
+                                    ),
+                                    startY = size.height * 0.3f
+                                )
+                            )
                         }
-                        Text(
-                            text = studio.name,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = textColor,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.primaryContainer
+                                )
                             )
                         )
-                    }
+                )
+            }
+
+            // Scene Count Badge at Top Right
+            if (studio.sceneCount > 0) {
+                Surface(
+                    shape = MaterialTheme.shapes.extraSmall,
+                    colors = SurfaceDefaults.colors(
+                        containerColor = Color.Black.copy(alpha = 0.75f)
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = "${studio.sceneCount} Scenes",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
                 }
             }
+
+            // Studio Name at Bottom Left
+            Text(
+                text = studio.name,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    shadow = Shadow(
+                        color = Color.Black.copy(alpha = 0.8f),
+                        offset = Offset(1f, 2f),
+                        blurRadius = 3f
+                    )
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp)
+            )
         }
     }
 }
