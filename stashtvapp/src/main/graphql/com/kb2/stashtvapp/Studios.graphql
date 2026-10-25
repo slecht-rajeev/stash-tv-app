@@ -4,6 +4,8 @@ query FindStudios($filter: FindFilterType, $studio_filter: StudioFilterType) {
     studios {
       id
       name
+      image_path
+      scene_count
     }
   }
 }
