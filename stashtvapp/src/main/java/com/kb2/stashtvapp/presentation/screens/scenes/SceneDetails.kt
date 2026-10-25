@@ -17,7 +17,6 @@
 package com.kb2.stashtvapp.presentation.screens.scenes
 
 import android.view.KeyEvent
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,16 +24,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PlayArrow
@@ -43,14 +42,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -79,7 +76,6 @@ import com.kb2.stashtvapp.data.entities.SceneDetails
 import com.kb2.stashtvapp.data.util.StringConstants
 import com.kb2.stashtvapp.presentation.screens.dashboard.rememberChildPadding
 import com.kb2.stashtvapp.presentation.theme.StashAppButtonShape
-import kotlinx.coroutines.launch
 
 @Composable
 fun SceneDetails(
@@ -89,7 +85,8 @@ fun SceneDetails(
     onAddPositionTag: (tagId: String) -> Unit = {},
     onRemovePositionTag: (tagId: String) -> Unit = {},
     onToggleFavorite: (sceneId: String) -> Unit = {},
-    onAddWatchLater: (sceneId: String) -> Unit = {}
+    onAddWatchLater: (sceneId: String) -> Unit = {},
+    onBackPressed: () -> Unit = {}
 ) {
     val childPadding = rememberChildPadding()
 
@@ -100,29 +97,82 @@ fun SceneDetails(
             sceneDetails = sceneDetails,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(480.dp)
+                .height(520.dp)
         )
 
-        Column(modifier = Modifier.fillMaxWidth(0.6f)) {
-            Spacer(modifier = Modifier.height(72.dp))
+        Column(modifier = Modifier.fillMaxWidth(0.68f)) {
+            // Visible Top Bar Menu with Back Button (Ensures top menu is never hidden!)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = childPadding.start,
+                        end = childPadding.end,
+                        top = childPadding.top,
+                        bottom = 12.dp
+                    )
+            ) {
+                IconButton(
+                    onClick = onBackPressed,
+                    colors = IconButtonDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                    ),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = SurfaceDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    )
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Movie,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "Video Details",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
             Column(
                 modifier = Modifier.padding(start = childPadding.start)
             ) {
                 val studio = sceneDetails.director.ifBlank { null }
                 if (studio != null && studio != "Unknown") {
                     Surface(
-                        shape = MaterialTheme.shapes.extraSmall,
+                        shape = RoundedCornerShape(6.dp),
                         colors = SurfaceDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
                         ),
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
                         Text(
                             text = studio.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
                 }
@@ -130,11 +180,11 @@ fun SceneDetails(
                 SceneLargeTitle(sceneTitle = sceneDetails.name)
 
                 Column(
-                    modifier = Modifier.alpha(0.75f)
+                    modifier = Modifier.alpha(0.85f)
                 ) {
                     SceneDescription(description = sceneDetails.description)
                     DotSeparatedRow(
-                        modifier = Modifier.padding(top = 16.dp),
+                        modifier = Modifier.padding(top = 14.dp),
                         texts = listOf(
                             sceneDetails.pgRating,
                             sceneDetails.releaseDate,
@@ -148,6 +198,7 @@ fun SceneDetails(
                         music = sceneDetails.music
                     )
                 }
+
                 ActionButtonsRow(
                     sceneDetails = sceneDetails,
                     goToScenePlayer = goToScenePlayer,
@@ -161,7 +212,7 @@ fun SceneDetails(
                         availablePositionSubTags = availablePositionSubTags,
                         onAddPosition = onAddPositionTag,
                         onRemovePosition = onRemovePositionTag,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 12.dp)
                     )
                 }
             }
@@ -200,10 +251,10 @@ private fun ActionButtonsRow(
     val resumePositionMs = (resumeTimeSec * 1000).toLong()
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .padding(top = 24.dp)
+            .padding(top = 20.dp)
             .focusGroup()
             .onPreviewKeyEvent { keyEvent ->
                 if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
@@ -227,30 +278,31 @@ private fun ActionButtonsRow(
             // 1. Resume Button
             Button(
                 onClick = { goToScenePlayer(resumePositionMs) },
-                modifier = Modifier.height(38.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                modifier = Modifier.height(40.dp),
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
                 shape = ButtonDefaults.shape(shape = StashAppButtonShape)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.PlayArrow,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.size(8.dp))
                 Text(
                     text = "Resume from $formattedTime",
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
             // 2. Start Over Button
             Button(
                 onClick = { goToScenePlayer(0L) },
-                modifier = Modifier.height(38.dp),
+                modifier = Modifier.height(40.dp),
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                 shape = ButtonDefaults.shape(shape = StashAppButtonShape),
                 colors = ButtonDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     focusedContainerColor = MaterialTheme.colorScheme.onSurface,
                     focusedContentColor = MaterialTheme.colorScheme.surface
@@ -271,19 +323,20 @@ private fun ActionButtonsRow(
             // Standard Watch Now Button
             Button(
                 onClick = { goToScenePlayer(0L) },
-                modifier = Modifier.height(38.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                modifier = Modifier.height(40.dp),
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
                 shape = ButtonDefaults.shape(shape = StashAppButtonShape)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.PlayArrow,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.size(8.dp))
                 Text(
                     text = stringResource(R.string.watch_now),
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -293,10 +346,10 @@ private fun ActionButtonsRow(
                 isFavorite = !isFavorite
                 onToggleFavorite(sceneDetails.id)
             },
-            modifier = Modifier.size(38.dp),
+            modifier = Modifier.size(40.dp),
             shape = IconButtonDefaults.shape(shape = StashAppButtonShape),
             colors = IconButtonDefaults.colors(
-                containerColor = if (isFavorite) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                containerColor = if (isFavorite) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                 contentColor = if (isFavorite) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
                 focusedContainerColor = MaterialTheme.colorScheme.onSurface,
                 focusedContentColor = MaterialTheme.colorScheme.surface,
@@ -305,7 +358,7 @@ private fun ActionButtonsRow(
             Icon(
                 imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 contentDescription = "Add to Favorites",
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
 
@@ -314,10 +367,10 @@ private fun ActionButtonsRow(
                 isWatchLater = !isWatchLater
                 onAddWatchLater(sceneDetails.id)
             },
-            modifier = Modifier.size(38.dp),
+            modifier = Modifier.size(40.dp),
             shape = IconButtonDefaults.shape(shape = StashAppButtonShape),
             colors = IconButtonDefaults.colors(
-                containerColor = if (isWatchLater) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                containerColor = if (isWatchLater) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                 contentColor = if (isWatchLater) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
                 focusedContainerColor = MaterialTheme.colorScheme.onSurface,
                 focusedContentColor = MaterialTheme.colorScheme.surface,
@@ -326,7 +379,7 @@ private fun ActionButtonsRow(
             Icon(
                 imageVector = if (isWatchLater) Icons.Filled.Check else Icons.Outlined.Add,
                 contentDescription = "Add to Watch Later",
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -338,10 +391,10 @@ private fun DirectorScreenplayMusicRow(
     screenplay: String,
     music: String
 ) {
-    Row(modifier = Modifier.padding(top = 32.dp)) {
+    Row(modifier = Modifier.padding(top = 24.dp)) {
         TitleValueText(
             modifier = Modifier
-                .padding(end = 32.dp)
+                .padding(end = 24.dp)
                 .weight(1f),
             title = stringResource(R.string.director),
             value = director
@@ -349,7 +402,7 @@ private fun DirectorScreenplayMusicRow(
 
         TitleValueText(
             modifier = Modifier
-                .padding(end = 32.dp)
+                .padding(end = 24.dp)
                 .weight(1f),
             title = stringResource(R.string.screenplay),
             value = screenplay
@@ -369,10 +422,11 @@ private fun SceneDescription(description: String) {
         text = description,
         style = MaterialTheme.typography.titleSmall.copy(
             fontSize = 15.sp,
-            fontWeight = FontWeight.Normal
+            fontWeight = FontWeight.Normal,
+            lineHeight = 22.sp
         ),
         modifier = Modifier.padding(top = 8.dp),
-        maxLines = 2
+        maxLines = 3
     )
 }
 
@@ -380,8 +434,9 @@ private fun SceneDescription(description: String) {
 private fun SceneLargeTitle(sceneTitle: String) {
     Text(
         text = sceneTitle,
-        style = MaterialTheme.typography.displayMedium.copy(
-            fontWeight = FontWeight.Bold
+        style = MaterialTheme.typography.headlineLarge.copy(
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 32.sp
         ),
         maxLines = 1
     )
@@ -408,14 +463,14 @@ private fun SceneImageWithGradients(
             drawRect(
                 Brush.verticalGradient(
                     colors = listOf(Color.Transparent, gradientColor),
-                    startY = size.height * 0.35f
+                    startY = size.height * 0.3f
                 )
             )
             drawRect(
                 Brush.horizontalGradient(
                     colors = listOf(gradientColor, Color.Transparent),
                     endX = size.width * 0.85f,
-                    startX = size.width * 0.15f
+                    startX = size.width * 0.12f
                 )
             )
             drawRect(

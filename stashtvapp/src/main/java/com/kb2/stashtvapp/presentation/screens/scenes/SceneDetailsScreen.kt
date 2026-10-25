@@ -105,87 +105,91 @@ private fun Details(
     val childPadding = rememberChildPadding()
 
     BackHandler(onBack = onBackPressed)
-    LazyColumn(
-        contentPadding = PaddingValues(bottom = 135.dp),
-        modifier = modifier,
-    ) {
-        item {
-            SceneDetails(
-                sceneDetails = sceneDetails,
-                availablePositionSubTags = availablePositionSubTags,
-                goToScenePlayer = goToScenePlayer,
-                onAddPositionTag = onAddPositionTag,
-                onRemovePositionTag = onRemovePositionTag,
-                onToggleFavorite = onToggleFavorite,
-                onAddWatchLater = onAddWatchLater
-            )
-        }
 
-        item {
-            CastAndCrewList(
-                castAndCrew = sceneDetails.castAndCrew
-            )
-        }
-
-        item {
-            ScenesRow(
-                title = StringConstants
-                    .Composable
-                    .sceneDetailsScreenSimilarTo(sceneDetails.name),
-                titleStyle = MaterialTheme.typography.titleMedium,
-                sceneList = sceneDetails.similarScenes,
-                onSceneSelected = refreshScreenWithNewScene
-            )
-        }
-
-        item {
-            SceneReviews(
-                modifier = Modifier.padding(top = childPadding.top),
-                reviewsAndRatings = sceneDetails.reviewsAndRatings
-            )
-        }
-
-        item {
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = childPadding.start)
-                    .padding(BottomDividerPadding)
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .alpha(0.15f)
-                    .background(MaterialTheme.colorScheme.onSurface)
-            )
-        }
-
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = childPadding.start),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                val itemModifier = Modifier.width(192.dp)
-
-                TitleValueText(
-                    modifier = itemModifier,
-                    title = stringResource(R.string.status),
-                    value = sceneDetails.status
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            contentPadding = PaddingValues(bottom = 135.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            item {
+                SceneDetails(
+                    sceneDetails = sceneDetails,
+                    goToScenePlayer = goToScenePlayer,
+                    availablePositionSubTags = availablePositionSubTags,
+                    onAddPositionTag = onAddPositionTag,
+                    onRemovePositionTag = onRemovePositionTag,
+                    onToggleFavorite = onToggleFavorite,
+                    onAddWatchLater = onAddWatchLater,
+                    onBackPressed = onBackPressed
                 )
-                TitleValueText(
-                    modifier = itemModifier,
-                    title = stringResource(R.string.original_language),
-                    value = sceneDetails.originalLanguage
+            }
+
+            item {
+                CastAndCrewList(
+                    castAndCrew = sceneDetails.castAndCrew
                 )
-                TitleValueText(
-                    modifier = itemModifier,
-                    title = stringResource(R.string.budget),
-                    value = sceneDetails.budget
+            }
+
+            item {
+                ScenesRow(
+                    title = StringConstants
+                        .Composable
+                        .sceneDetailsScreenSimilarTo(sceneDetails.name),
+                    titleStyle = MaterialTheme.typography.titleMedium,
+                    sceneList = sceneDetails.similarScenes,
+                    onSceneSelected = refreshScreenWithNewScene
                 )
-                TitleValueText(
-                    modifier = itemModifier,
-                    title = stringResource(R.string.revenue),
-                    value = sceneDetails.revenue
+            }
+
+            item {
+                SceneReviews(
+                    modifier = Modifier.padding(top = childPadding.top),
+                    reviewsAndRatings = sceneDetails.reviewsAndRatings
                 )
+            }
+
+            item {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = childPadding.start)
+                        .padding(BottomDividerPadding)
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .alpha(0.15f)
+                        .background(MaterialTheme.colorScheme.onSurface)
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = childPadding.start),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    val itemModifier = Modifier.width(192.dp)
+
+                    TitleValueText(
+                        modifier = itemModifier,
+                        title = stringResource(R.string.status),
+                        value = sceneDetails.status
+                    )
+                    TitleValueText(
+                        modifier = itemModifier,
+                        title = stringResource(R.string.original_language),
+                        value = sceneDetails.originalLanguage
+                    )
+                    TitleValueText(
+                        modifier = itemModifier,
+                        title = stringResource(R.string.budget),
+                        value = sceneDetails.budget
+                    )
+                    TitleValueText(
+                        modifier = itemModifier,
+                        title = stringResource(R.string.revenue),
+                        value = sceneDetails.revenue
+                    )
+                }
             }
         }
     }
